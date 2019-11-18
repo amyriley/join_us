@@ -1,8 +1,10 @@
 var express = require('express');
 var app = express();
+var mysql = require('mysql');
+
+app.set("view engine", "ejs");
 
 var faker = require('faker');
-var mysql = require('mysql');
 
 var mysqlPassword = process.env.MYSQL_PASSWORD;
 
@@ -13,15 +15,29 @@ var connection = mysql.createConnection({
     database: 'join_us'
 });
 
-var q = 'SELECT CURDATE()';
-connection.query(q, function(error, results, fields) {
-    if (error) throw error;
-    console.log(results);
-})
+var data = [];
+for (var i = 0; i < 500; i++) {
+    data.push([
+        faker.internet.email(),
+        faker.date.past()
+    ]);
+}
 
-app.get("/", function(req, res) {
-    res.send("You've reached the home page!");
+var q = 'INSERT INTO users (email, created_at) VALUES ?';
+ 
+connection.query(q, [data], function(err, result) {
+  console.log(err);
+  console.log(result);
 });
+
+app.get("/", function(req, res){
+    var q = 'SELECT COUNT(*) as count FROM users';
+    connection.query(q, function (error, results) {
+    if (error) throw error;
+    var count = results[0].count;
+    res.render("home", {data: count});
+    });
+   });
 
 app.get("/joke", function(req, res) {
     var joke = "Here's a joke...";
@@ -34,6 +50,6 @@ app.get("/random_num", function(req, res) {
 });
 
 app.listen(5050, function() {
-    console.log("Server running on 8080!");
+    console.log("Server running on 5050!");
 });
 
